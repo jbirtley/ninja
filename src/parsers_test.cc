@@ -315,17 +315,6 @@ TEST_F(ParserTest, Errors) {
     State state;
     ManifestParser parser(&state, NULL);
     string err;
-    EXPECT_FALSE(parser.Parse("rule cc\n  command = foo\n  depfile = bar\n"
-                              "build a.o b.o: cc c.cc\n",
-                              &err));
-    EXPECT_EQ("line 4, col 16: dependency files only work with "
-              "single-output rules", err);
-  }
-
-  {
-    State state;
-    ManifestParser parser(&state, NULL);
-    string err;
     EXPECT_FALSE(parser.Parse("rule cc\n  command = foo\n  othervar = bar\n",
                               &err));
     EXPECT_EQ("line 3, col 3: unexpected variable 'othervar'", err);
@@ -341,6 +330,20 @@ TEST_F(ParserTest, Errors) {
     EXPECT_EQ("line 4, col 1: expected variable after $", err);
   }
 }
+
+
+TEST_F(ParserTest, MultipleOutputs) {
+  State state;
+  ManifestParser parser(&state, NULL);
+  string err;
+  EXPECT_TRUE(parser.Parse("rule cc\n  command = foo\n  depfile = bar\n"
+                            "build a.o b.o: cc c.cc\n",
+                            &err));
+  ASSERT_EQ(1u, state.edges_.size());
+  Edge* edge = state.edges_[0];
+  ASSERT_EQ(2u, edge->outputs_.size());
+}
+
 
 TEST_F(ParserTest, SubNinja) {
   files_["test.ninja"] =
